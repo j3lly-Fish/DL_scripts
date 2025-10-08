@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { AuditLog } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
-import { Shield, Users, Activity } from 'lucide-react';
+import { Shield, Users as UsersIcon, Activity, UserPlus } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AdminPage() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -45,14 +47,22 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center">
-          <Shield className="h-8 w-8 mr-3 text-primary" />
-          Admin Dashboard
-        </h1>
-        <p className="text-gray-600 mt-2">
-          System-wide overview and all user audit logs
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center">
+            <Shield className="h-8 w-8 mr-3 text-primary" />
+            Admin Dashboard
+          </h1>
+          <p className="text-gray-600 mt-2">
+            System-wide overview and all user audit logs
+          </p>
+        </div>
+        <Link href="/admin/users">
+          <Button className="bg-purple-600 hover:bg-purple-700">
+            <UserPlus className="h-4 w-4 mr-2" />
+            Manage Users
+          </Button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -74,7 +84,7 @@ export default function AdminPage() {
             <CardTitle className="text-sm font-medium text-gray-600">
               Active Users
             </CardTitle>
-            <Users className="h-4 w-4 text-gray-600" />
+            <UsersIcon className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{uniqueUsers}</div>
