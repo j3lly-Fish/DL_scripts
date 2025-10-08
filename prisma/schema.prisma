@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String      @id @default(cuid())
+  email      String      @unique
+  password   String
+  dbTenantId String
+  role       Role        @default(USER)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  
+  scripts    Script[]
+  auditLogs  AuditLog[]
+
+  @@index([email])
+}
+
+model Script {
+  id          String      @id @default(cuid())
+  name        String
+  description String
+  code        String      @db.Text
+  category    String
+  createdBy   String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  creator     User        @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  auditLogs   AuditLog[]
+
+  @@index([category])
+  @@index([createdBy])
+}
+
+model AuditLog {
+  id           String      @id @default(cuid())
+  userId       String
+  userEmail    String
+  scriptId     String
+  scriptName   String
+  dbTenantId   String
+  bearerToken  String
+  status       LogStatus   @default(PENDING)
+  response     String?     @db.Text
+  error        String?     @db.Text
+  executedAt   DateTime    @default(now())
+  
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  script       Script      @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([scriptId])
+  @@index([status])
+  @@index([executedAt])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum LogStatus {
+  PENDING
+  SUCCESS
+  FAILURE
+}
