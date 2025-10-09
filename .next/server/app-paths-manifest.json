@@ -1,4 +1,4 @@
 {
-  "/api/scripts/execute-stream/route": "app/api/scripts/execute-stream/route.js",
+  "/api/scripts/input/route": "app/api/scripts/input/route.js",
   "/(dashboard)/scripts/page": "app/(dashboard)/scripts/page.js"
 }

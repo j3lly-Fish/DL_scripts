@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Script } from '@/lib/types';
 import { Plus, X, Code2 } from 'lucide-react';
 import ScriptExecutorWithTerminal from '@/components/ScriptExecutorWithTerminal';
+import PythonScriptExecutor from '@/components/PythonScriptExecutor';
 
 export default function ScriptsPage() {
   const [scripts, setScripts] = useState<Script[]>([]);
@@ -80,11 +81,20 @@ export default function ScriptsPage() {
     }
   };
 
+  const isPythonScript = (code: string) => {
+    return code.includes('#!/usr/bin/env python') || 
+           code.includes('import ') || 
+           code.includes('def ') ||
+           code.includes('print(');
+  };
+
   const categoryColors: Record<string, string> = {
     Users: 'bg-blue-500',
     Organizations: 'bg-green-500',
     Settings: 'bg-purple-500',
     Reports: 'bg-orange-500',
+    DoorLoop: 'bg-indigo-500',
+    Python: 'bg-yellow-500',
   };
 
   return (
@@ -93,7 +103,7 @@ export default function ScriptsPage() {
         <div>
           <h1 className="text-3xl font-bold">Script Library</h1>
           <p className="text-gray-600 mt-2">
-            Browse and execute API scripts with live terminal output
+            Execute JavaScript and Python scripts with live terminal output
           </p>
         </div>
         {userRole === 'ADMIN' && (
@@ -123,7 +133,7 @@ export default function ScriptsPage() {
               <Plus className="h-5 w-5 text-green-600" />
               Create New Script
             </CardTitle>
-            <CardDescription>Add a new script to the library</CardDescription>
+            <CardDescription>Add a JavaScript or Python script to the library</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <form onSubmit={createScript} className="space-y-4">
@@ -132,7 +142,7 @@ export default function ScriptsPage() {
                   <Label htmlFor="name">Script Name *</Label>
                   <Input
                     id="name"
-                    placeholder="e.g., Bulk Tag Contacts"
+                    placeholder="e.g., Bulk Exclude Transactions"
                     value={newScript.name}
                     onChange={(e) => setNewScript({ ...newScript, name: e.target.value })}
                     required
@@ -142,7 +152,7 @@ export default function ScriptsPage() {
                   <Label htmlFor="category">Category *</Label>
                   <Input
                     id="category"
-                    placeholder="e.g., Intercom, Users"
+                    placeholder="e.g., DoorLoop, Python"
                     value={newScript.category}
                     onChange={(e) => setNewScript({ ...newScript, category: e.target.value })}
                     required
@@ -165,15 +175,15 @@ export default function ScriptsPage() {
                 <Label htmlFor="code">Script Code *</Label>
                 <Textarea
                   id="code"
-                  placeholder="async function execute(bearerToken, params) {&#10;  console.log('Starting script...');&#10;  // Your code here&#10;  return result;&#10;}"
+                  placeholder="Paste your Python or JavaScript code here..."
                   value={newScript.code}
                   onChange={(e) => setNewScript({ ...newScript, code: e.target.value })}
-                  rows={12}
+                  rows={15}
                   className="font-mono text-sm"
                   required
                 />
                 <p className="text-xs text-gray-500">
-                  Use console.log() for terminal output. Function must accept bearerToken and params.
+                  Python scripts will run server-side. JavaScript must have async execute(bearerToken, params) function.
                 </p>
               </div>
 
@@ -207,41 +217,55 @@ export default function ScriptsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Available Scripts ({scripts.length})</h2>
-          {scripts.map((script) => (
-            <Card
-              key={script.id}
-              className={`cursor-pointer transition-all ${
-                selectedScript?.id === script.id
-                  ? 'ring-2 ring-blue-500 shadow-lg'
-                  : 'hover:shadow-md'
-              }`}
-              onClick={() => setSelectedScript(script)}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{script.name}</CardTitle>
-                    <CardDescription className="mt-1">
-                      {script.description}
-                    </CardDescription>
+          {scripts.map((script) => {
+            const isPython = isPythonScript(script.code);
+            return (
+              <Card
+                key={script.id}
+                className={`cursor-pointer transition-all ${
+                  selectedScript?.id === script.id
+                    ? 'ring-2 ring-blue-500 shadow-lg'
+                    : 'hover:shadow-md'
+                }`}
+                onClick={() => setSelectedScript(script)}
+              >
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {script.name}
+                        {isPython && (
+                          <Badge className="bg-yellow-500 text-white text-xs">
+                            🐍 Python
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        {script.description}
+                      </CardDescription>
+                    </div>
+                    <Badge
+                      className={`${
+                        categoryColors[script.category] || 'bg-gray-500'
+                      } text-white`}
+                    >
+                      {script.category}
+                    </Badge>
                   </div>
-                  <Badge
-                    className={`${
-                      categoryColors[script.category] || 'bg-gray-500'
-                    } text-white`}
-                  >
-                    {script.category}
-                  </Badge>
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
+                </CardHeader>
+              </Card>
+            );
+          })}
         </div>
 
         <div className="space-y-4">
           {selectedScript ? (
             <>
-              <ScriptExecutorWithTerminal script={selectedScript} />
+              {isPythonScript(selectedScript.code) ? (
+                <PythonScriptExecutor script={selectedScript} />
+              ) : (
+                <ScriptExecutorWithTerminal script={selectedScript} />
+              )}
 
               <Card>
                 <CardHeader>
@@ -251,7 +275,7 @@ export default function ScriptsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <pre className="text-xs bg-gray-50 p-4 rounded overflow-x-auto max-h-[300px]">
+                  <pre className="text-xs bg-gray-50 p-4 rounded overflow-x-auto max-h-[400px]">
                     <code>{selectedScript.code}</code>
                   </pre>
                 </CardContent>

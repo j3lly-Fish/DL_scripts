@@ -27,6 +27,7 @@ model Script {
   name        String
   description String
   code        String      @db.Text
+  language    String   @default("javascript")
   category    String
   createdBy   String
   createdAt   DateTime    @default(now())

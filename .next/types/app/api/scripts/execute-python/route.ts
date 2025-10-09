@@ -1,8 +1,8 @@
-// File: /Users/kahlilgersbach/Documents/Script Library/app/api/scripts/execute-stream/route.ts
-import * as entry from '../../../../../../app/api/scripts/execute-stream/route.js'
+// File: /Users/kahlilgersbach/Documents/Script Library/app/api/scripts/execute-python/route.ts
+import * as entry from '../../../../../../app/api/scripts/execute-python/route.js'
 import type { NextRequest } from 'next/server.js'
 
-type TEntry = typeof import('../../../../../../app/api/scripts/execute-stream/route.js')
+type TEntry = typeof import('../../../../../../app/api/scripts/execute-python/route.js')
 
 // Check that the entry is a valid entry
 checkFields<Diff<{
