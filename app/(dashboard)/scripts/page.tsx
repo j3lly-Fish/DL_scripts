@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Script } from '@/lib/types';
-import { Plus, X, Code2 } from 'lucide-react';
+import { Plus, X, Code2, Lock, Shield } from 'lucide-react';
 import ScriptExecutorWithTerminal from '@/components/ScriptExecutorWithTerminal';
 import PythonScriptExecutor from '@/components/PythonScriptExecutor';
 
@@ -24,9 +24,12 @@ export default function ScriptsPage() {
     description: '',
     code: '',
     category: '',
+    language: 'javascript',
   });
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
+
+  const isAdmin = userRole === 'ADMIN';
 
   useEffect(() => {
     fetchScripts();
@@ -37,7 +40,7 @@ export default function ScriptsPage() {
     try {
       const response = await fetch('/api/auth/me');
       const data = await response.json();
-      setUserRole(data.role);
+      setUserRole(data.user?.role || '');
     } catch (err) {
       console.error('Failed to fetch user role:', err);
     }
@@ -47,7 +50,7 @@ export default function ScriptsPage() {
     try {
       const response = await fetch('/api/scripts');
       const data = await response.json();
-      setScripts(data.scripts);
+      setScripts(data.scripts || []);
     } catch (err) {
       console.error('Failed to fetch scripts:', err);
     }
@@ -55,14 +58,26 @@ export default function ScriptsPage() {
 
   const createScript = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isAdmin) {
+      setCreateError('Only administrators can create scripts');
+      return;
+    }
+
     setCreating(true);
     setCreateError('');
 
     try {
+      // Auto-detect language if not explicitly set
+      const detectedLanguage = isPythonScript(newScript.code) ? 'python' : 'javascript';
+      
       const response = await fetch('/api/scripts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newScript),
+        body: JSON.stringify({
+          ...newScript,
+          language: detectedLanguage,
+        }),
       });
 
       const data = await response.json();
@@ -71,7 +86,7 @@ export default function ScriptsPage() {
         throw new Error(data.error || 'Failed to create script');
       }
 
-      setNewScript({ name: '', description: '', code: '', category: '' });
+      setNewScript({ name: '', description: '', code: '', category: '', language: 'javascript' });
       setShowCreateForm(false);
       fetchScripts();
     } catch (err: any) {
@@ -95,6 +110,7 @@ export default function ScriptsPage() {
     Reports: 'bg-orange-500',
     DoorLoop: 'bg-indigo-500',
     Python: 'bg-yellow-500',
+    Transactions: 'bg-pink-500',
   };
 
   return (
@@ -106,7 +122,7 @@ export default function ScriptsPage() {
             Execute JavaScript and Python scripts with live terminal output
           </p>
         </div>
-        {userRole === 'ADMIN' && (
+        {isAdmin && (
           <Button
             onClick={() => setShowCreateForm(!showCreateForm)}
             className="bg-green-600 hover:bg-green-700"
@@ -126,7 +142,33 @@ export default function ScriptsPage() {
         )}
       </div>
 
-      {showCreateForm && userRole === 'ADMIN' && (
+      {/* Role Badge */}
+      <Card className={`${isAdmin ? 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'}`}>
+        <CardContent className="py-4">
+          <div className="flex items-center gap-3">
+            <Badge variant={isAdmin ? "default" : "secondary"} className="text-sm">
+              {isAdmin ? (
+                <>
+                  <Shield className="h-3 w-3 mr-1" />
+                  Administrator
+                </>
+              ) : (
+                <>
+                  <Lock className="h-3 w-3 mr-1" />
+                  User
+                </>
+              )}
+            </Badge>
+            <span className="text-sm text-gray-600">
+              {isAdmin 
+                ? 'You can create, edit, and delete scripts' 
+                : 'You can execute scripts created by administrators'}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {showCreateForm && isAdmin && (
         <Card className="border-2 border-green-500 shadow-lg">
           <CardHeader className="bg-green-50">
             <CardTitle className="text-xl flex items-center gap-2">
@@ -183,7 +225,7 @@ export default function ScriptsPage() {
                   required
                 />
                 <p className="text-xs text-gray-500">
-                  Python scripts will run server-side. JavaScript must have async execute(bearerToken, params) function.
+                  Python scripts will run server-side with input support. JavaScript must have async execute(bearerToken, params) function.
                 </p>
               </div>
 
@@ -202,7 +244,7 @@ export default function ScriptsPage() {
                   variant="outline"
                   onClick={() => {
                     setShowCreateForm(false);
-                    setNewScript({ name: '', description: '', code: '', category: '' });
+                    setNewScript({ name: '', description: '', code: '', category: '', language: 'javascript' });
                     setCreateError('');
                   }}
                 >
@@ -214,48 +256,81 @@ export default function ScriptsPage() {
         </Card>
       )}
 
+      {/* Non-Admin Notice */}
+      {!isAdmin && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <Lock className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <p className="font-semibold text-blue-900">Limited Access</p>
+                <p className="text-sm text-blue-700 mt-1">
+                  You're viewing scripts as a regular user. Only administrators can create, edit, or delete scripts.
+                  Contact your administrator to request new scripts or modifications.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Available Scripts ({scripts.length})</h2>
-          {scripts.map((script) => {
-            const isPython = isPythonScript(script.code);
-            return (
-              <Card
-                key={script.id}
-                className={`cursor-pointer transition-all ${
-                  selectedScript?.id === script.id
-                    ? 'ring-2 ring-blue-500 shadow-lg'
-                    : 'hover:shadow-md'
-                }`}
-                onClick={() => setSelectedScript(script)}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {script.name}
-                        {isPython && (
-                          <Badge className="bg-yellow-500 text-white text-xs">
-                            🐍 Python
-                          </Badge>
-                        )}
-                      </CardTitle>
-                      <CardDescription className="mt-1">
-                        {script.description}
-                      </CardDescription>
+          {scripts.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Code2 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-600 mb-4">No scripts available yet</p>
+                {isAdmin && (
+                  <Button onClick={() => setShowCreateForm(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Your First Script
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            scripts.map((script) => {
+              const isPython = isPythonScript(script.code);
+              return (
+                <Card
+                  key={script.id}
+                  className={`cursor-pointer transition-all ${
+                    selectedScript?.id === script.id
+                      ? 'ring-2 ring-blue-500 shadow-lg'
+                      : 'hover:shadow-md'
+                  }`}
+                  onClick={() => setSelectedScript(script)}
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          {script.name}
+                          {isPython && (
+                            <Badge className="bg-yellow-500 text-white text-xs">
+                              🐍 Python
+                            </Badge>
+                          )}
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          {script.description}
+                        </CardDescription>
+                      </div>
+                      <Badge
+                        className={`${
+                          categoryColors[script.category] || 'bg-gray-500'
+                        } text-white`}
+                      >
+                        {script.category}
+                      </Badge>
                     </div>
-                    <Badge
-                      className={`${
-                        categoryColors[script.category] || 'bg-gray-500'
-                      } text-white`}
-                    >
-                      {script.category}
-                    </Badge>
-                  </div>
-                </CardHeader>
-              </Card>
-            );
-          })}
+                  </CardHeader>
+                </Card>
+              );
+            })
+          )}
         </div>
 
         <div className="space-y-4">

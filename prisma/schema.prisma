@@ -16,8 +16,8 @@ model User {
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
   
-  scripts    Script[]
-  auditLogs  AuditLog[]
+  auditLogs    AuditLog[]
+  createdScripts Script[]  // Add this relation
 
   @@index([email])
 }
@@ -29,7 +29,7 @@ model Script {
   code        String      @db.Text
   language    String   @default("javascript")
   category    String
-  createdBy   String
+  createdBy   String     // User ID of creator
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   
