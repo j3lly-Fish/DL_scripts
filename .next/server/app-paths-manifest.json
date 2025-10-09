@@ -1,7 +1,4 @@
 {
-  "/api/audit-logs/route": "app/api/audit-logs/route.js",
-  "/api/admin/users/route": "app/api/admin/users/route.js",
-  "/(dashboard)/admin/page": "app/(dashboard)/admin/page.js",
-  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
-  "/(dashboard)/admin/users/page": "app/(dashboard)/admin/users/page.js"
+  "/api/scripts/execute-stream/route": "app/api/scripts/execute-stream/route.js",
+  "/(dashboard)/scripts/page": "app/(dashboard)/scripts/page.js"
 }

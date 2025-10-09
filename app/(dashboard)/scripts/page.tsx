@@ -8,16 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Script } from '@/lib/types';
-import { Play, Code2, Plus, X } from 'lucide-react';
+import { Plus, X, Code2 } from 'lucide-react';
+import ScriptExecutorWithTerminal from '@/components/ScriptExecutorWithTerminal';
 
 export default function ScriptsPage() {
   const [scripts, setScripts] = useState<Script[]>([]);
   const [selectedScript, setSelectedScript] = useState<Script | null>(null);
-  const [bearerToken, setBearerToken] = useState('');
-  const [parameters, setParameters] = useState('{}');
-  const [executing, setExecuting] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const [error, setError] = useState('');
   const [userRole, setUserRole] = useState<string>('');
   
   // Create script form state
@@ -74,7 +70,6 @@ export default function ScriptsPage() {
         throw new Error(data.error || 'Failed to create script');
       }
 
-      // Reset form and refresh scripts
       setNewScript({ name: '', description: '', code: '', category: '' });
       setShowCreateForm(false);
       fetchScripts();
@@ -82,39 +77,6 @@ export default function ScriptsPage() {
       setCreateError(err.message);
     } finally {
       setCreating(false);
-    }
-  };
-
-  const executeScript = async () => {
-    if (!selectedScript || !bearerToken) return;
-
-    setExecuting(true);
-    setError('');
-    setResult(null);
-
-    try {
-      const params = JSON.parse(parameters);
-      const response = await fetch('/api/scripts/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scriptId: selectedScript.id,
-          bearerToken,
-          parameters: params,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setResult(data.result);
-      } else {
-        setError(data.error || 'Execution failed');
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setExecuting(false);
     }
   };
 
@@ -131,7 +93,7 @@ export default function ScriptsPage() {
         <div>
           <h1 className="text-3xl font-bold">Script Library</h1>
           <p className="text-gray-600 mt-2">
-            Browse and execute API scripts with your bearer token
+            Browse and execute API scripts with live terminal output
           </p>
         </div>
         {userRole === 'ADMIN' && (
@@ -154,7 +116,6 @@ export default function ScriptsPage() {
         )}
       </div>
 
-      {/* Create Script Form (Admin Only) */}
       {showCreateForm && userRole === 'ADMIN' && (
         <Card className="border-2 border-green-500 shadow-lg">
           <CardHeader className="bg-green-50">
@@ -171,7 +132,7 @@ export default function ScriptsPage() {
                   <Label htmlFor="name">Script Name *</Label>
                   <Input
                     id="name"
-                    placeholder="e.g., Get User List"
+                    placeholder="e.g., Bulk Tag Contacts"
                     value={newScript.name}
                     onChange={(e) => setNewScript({ ...newScript, name: e.target.value })}
                     required
@@ -181,7 +142,7 @@ export default function ScriptsPage() {
                   <Label htmlFor="category">Category *</Label>
                   <Input
                     id="category"
-                    placeholder="e.g., Users, Organizations"
+                    placeholder="e.g., Intercom, Users"
                     value={newScript.category}
                     onChange={(e) => setNewScript({ ...newScript, category: e.target.value })}
                     required
@@ -204,15 +165,15 @@ export default function ScriptsPage() {
                 <Label htmlFor="code">Script Code *</Label>
                 <Textarea
                   id="code"
-                  placeholder="async function execute(bearerToken, params) {&#10;  // Your code here&#10;  const response = await fetch('https://api.example.com/endpoint', {&#10;    headers: { 'Authorization': `Bearer ${bearerToken}` }&#10;  });&#10;  return await response.json();&#10;}"
+                  placeholder="async function execute(bearerToken, params) {&#10;  console.log('Starting script...');&#10;  // Your code here&#10;  return result;&#10;}"
                   value={newScript.code}
                   onChange={(e) => setNewScript({ ...newScript, code: e.target.value })}
-                  rows={10}
+                  rows={12}
                   className="font-mono text-sm"
                   required
                 />
                 <p className="text-xs text-gray-500">
-                  Must contain an async function named "execute" that accepts bearerToken and params
+                  Use console.log() for terminal output. Function must accept bearerToken and params.
                 </p>
               </div>
 
@@ -280,48 +241,7 @@ export default function ScriptsPage() {
         <div className="space-y-4">
           {selectedScript ? (
             <>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Execute: {selectedScript.name}</CardTitle>
-                  <CardDescription>
-                    Provide your bearer token and parameters to run this script
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="bearerToken">Bearer Token</Label>
-                    <Input
-                      id="bearerToken"
-                      type="password"
-                      placeholder="Enter your API bearer token"
-                      value={bearerToken}
-                      onChange={(e) => setBearerToken(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="parameters">
-                      Parameters (JSON)
-                    </Label>
-                    <Textarea
-                      id="parameters"
-                      placeholder='{"key": "value"}'
-                      value={parameters}
-                      onChange={(e) => setParameters(e.target.value)}
-                      rows={4}
-                    />
-                  </div>
-
-                  <Button
-                    onClick={executeScript}
-                    disabled={executing || !bearerToken}
-                    className="w-full"
-                  >
-                    <Play className="h-4 w-4 mr-2" />
-                    {executing ? 'Executing...' : 'Execute Script'}
-                  </Button>
-                </CardContent>
-              </Card>
+              <ScriptExecutorWithTerminal script={selectedScript} />
 
               <Card>
                 <CardHeader>
@@ -331,32 +251,11 @@ export default function ScriptsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <pre className="text-xs bg-gray-50 p-4 rounded overflow-x-auto">
+                  <pre className="text-xs bg-gray-50 p-4 rounded overflow-x-auto max-h-[300px]">
                     <code>{selectedScript.code}</code>
                   </pre>
                 </CardContent>
               </Card>
-
-              {(result || error) && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm font-medium">
-                      {error ? 'Error' : 'Result'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {error ? (
-                      <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
-                        {error}
-                      </div>
-                    ) : (
-                      <pre className="text-xs bg-gray-50 p-4 rounded overflow-x-auto">
-                        <code>{JSON.stringify(result, null, 2)}</code>
-                      </pre>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
             </>
           ) : (
             <Card>
