@@ -4,13 +4,15 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { AuditLog } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
-import { ScrollText, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { ScrollText, CheckCircle, XCircle, Clock, ChevronDown, ChevronRight } from 'lucide-react';
 
 export default function AuditLogsPage() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedLog, setExpandedLog] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAuditLogs();
@@ -20,12 +22,16 @@ export default function AuditLogsPage() {
     try {
       const response = await fetch('/api/audit-logs');
       const data = await response.json();
-      setAuditLogs(data.auditLogs);
+      setAuditLogs(data.auditLogs || data.logs || []);
     } catch (err) {
       console.error('Failed to fetch audit logs:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleExpand = (logId: string) => {
+    setExpandedLog(expandedLog === logId ? null : logId);
   };
 
   const getStatusBadge = (status: string) => {
@@ -87,6 +93,7 @@ export default function AuditLogsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10"></TableHead>
                     <TableHead>Date/Time</TableHead>
                     <TableHead>Script</TableHead>
                     <TableHead>Status</TableHead>
@@ -97,22 +104,80 @@ export default function AuditLogsPage() {
                 </TableHeader>
                 <TableBody>
                   {auditLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell className="font-mono text-xs">
-                        {formatDate(log.executedAt)}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {log.scriptName}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(log.status)}</TableCell>
-                      <TableCell className="text-sm">{log.userEmail}</TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {log.dbTenantId}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {log.bearerToken}
-                      </TableCell>
-                    </TableRow>
+                    <>
+                      <TableRow key={log.id} className="cursor-pointer hover:bg-gray-50">
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleExpand(log.id)}
+                            className="p-0 h-8 w-8"
+                          >
+                            {expandedLog === log.id ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {formatDate(log.executedAt || log.createdAt)}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {log.scriptName}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(log.status)}</TableCell>
+                        <TableCell className="text-sm">{log.userEmail}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {log.dbTenantId}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {log.bearerToken}
+                        </TableCell>
+                      </TableRow>
+                      {expandedLog === log.id && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="bg-gray-50">
+                            <div className="p-4 space-y-4">
+                              {log.response && (
+                                <div>
+                                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                    Response Output
+                                  </h4>
+                                  <pre className="text-xs bg-green-50 p-3 rounded overflow-x-auto max-h-96 overflow-y-auto border border-green-200">
+                                    {log.response}
+                                  </pre>
+                                </div>
+                              )}
+                              {log.error && (
+                                <div>
+                                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                                    <XCircle className="h-4 w-4 text-red-600" />
+                                    Error Details
+                                  </h4>
+                                  <pre className="text-xs bg-red-50 p-3 rounded overflow-x-auto max-h-96 overflow-y-auto border border-red-200">
+                                    {log.error}
+                                  </pre>
+                                </div>
+                              )}
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(JSON.stringify(log, null, 2));
+                                    alert('Log details copied to clipboard');
+                                  }}
+                                >
+                                  Copy Log Details
+                                </Button>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
                   ))}
                 </TableBody>
               </Table>

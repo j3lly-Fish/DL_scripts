@@ -1,12 +1,10 @@
 {
-  "/api/auth/login/route": "app/api/auth/login/route.js",
-  "/api/auth/me/route": "app/api/auth/me/route.js",
-  "/api/audit-logs/route": "app/api/audit-logs/route.js",
-  "/api/scripts/route": "app/api/scripts/route.js",
-  "/api/auth/logout/route": "app/api/auth/logout/route.js",
   "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/(dashboard)/admin/page": "app/(dashboard)/admin/page.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
+  "/api/audit-logs/route": "app/api/audit-logs/route.js",
+  "/api/auth/logout/route": "app/api/auth/logout/route.js",
   "/(dashboard)/audit-logs/page": "app/(dashboard)/audit-logs/page.js",
   "/(dashboard)/scripts/page": "app/(dashboard)/scripts/page.js",
-  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js"
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/(dashboard)/admin/page": "app/(dashboard)/admin/page.js"
 }

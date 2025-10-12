@@ -4,9 +4,6 @@ import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { maskToken } from '@/lib/utils';
 import { spawn } from 'child_process';
-import { writeFile, unlink, mkdir } from 'fs/promises';
-import path from 'path';
-import { existsSync } from 'fs';
 
 // Global storage for running processes
 declare global {
@@ -172,15 +169,6 @@ async function handlePythonExecution(
           // Clean up process reference
           global.runningProcesses.delete(processId);
 
-          // Delete temporary file
-          if (tempFilePath) {
-            try {
-              await unlink(tempFilePath);
-            } catch (unlinkError) {
-              console.error('Failed to delete temp file:', unlinkError);
-            }
-          }
-
           // Create audit log
           try {
             await prisma.auditLog.create({
@@ -192,7 +180,7 @@ async function handlePythonExecution(
                 dbTenantId: user.dbTenantId,
                 bearerToken: maskToken(bearerToken),
                 status: code === 0 && !hasError ? 'SUCCESS' : 'FAILURE',
-                response: code === 0 ? outputBuffer : undefined,
+                response: code === 0 && !hasError ? outputBuffer : undefined,
                 error: hasError ? errorMessage : (code !== 0 ? `Process exited with code ${code}` : undefined),
               },
             });
@@ -213,16 +201,6 @@ async function handlePythonExecution(
 
         pythonProcess.on('error', async (error) => {
           global.runningProcesses.delete(processId);
-          
-          // Clean up temp file
-          if (tempFilePath) {
-            try {
-              await unlink(tempFilePath);
-            } catch (unlinkError) {
-              console.error('Failed to delete temp file:', unlinkError);
-            }
-          }
-
           hasError = true;
           errorMessage = error.message;
 
@@ -236,16 +214,6 @@ async function handlePythonExecution(
 
       } catch (error: any) {
         global.runningProcesses.delete(processId);
-        
-        // Clean up temp file
-        if (tempFilePath) {
-          try {
-            await unlink(tempFilePath);
-          } catch (unlinkError) {
-            console.error('Failed to delete temp file:', unlinkError);
-          }
-        }
-
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ 
             type: 'error', 
@@ -256,21 +224,12 @@ async function handlePythonExecution(
       }
     },
     
-    async cancel() {
+    cancel() {
       // Clean up if client disconnects
       const processData = global.runningProcesses.get(processId);
       if (processData) {
         processData.process.kill();
         global.runningProcesses.delete(processId);
-        
-        // Clean up temp file
-        if (processData.tempFilePath) {
-          try {
-            await unlink(processData.tempFilePath);
-          } catch (unlinkError) {
-            console.error('Failed to delete temp file:', unlinkError);
-          }
-        }
       }
     }
   });
