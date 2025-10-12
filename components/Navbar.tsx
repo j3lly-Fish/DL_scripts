@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from './ui/button';
-import { LogOut, Code2, ScrollText, LayoutDashboard, Shield } from 'lucide-react';
+import { LogOut, Code2, ScrollText, LayoutDashboard, Shield, Filter } from 'lucide-react';
 import { Role } from '@prisma/client';
 
 interface NavbarProps {
@@ -25,6 +25,7 @@ export default function Navbar({ userEmail, userRole }: NavbarProps) {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/scripts', label: 'Scripts', icon: Code2 },
     { href: '/audit-logs', label: 'Audit Logs', icon: ScrollText },
+    { href: '/audit-logs/advanced', label: 'Advanced Logs', icon: Filter }
   ];
 
   if (userRole === 'ADMIN') {
