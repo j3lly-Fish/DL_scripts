@@ -50,10 +50,15 @@ export async function POST(request: NextRequest) {
       message: 'Login successful'
     });
   } catch (error) {
-    console.error('Login error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    // Log full error for debugging
+    console.error('Login error:', error instanceof Error ? error.stack ?? error.message : error);
+
+    // In non-production include the error message to aid debugging client-side
+    const body: any = { error: 'Internal server error' };
+    if (process.env.NODE_ENV !== 'production') {
+      body.details = error instanceof Error ? error.message : String(error);
+    }
+
+    return NextResponse.json(body, { status: 500 });
   }
 }

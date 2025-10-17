@@ -1,4 +1,4 @@
-// File: /Users/kahlilgersbach/Documents/Script Library/app/api/auth/login/route.ts
+// File: /home/DL_scripts/app/api/auth/login/route.ts
 import * as entry from '../../../../../../app/api/auth/login/route.js'
 import type { NextRequest } from 'next/server.js'
 

@@ -1,4 +1,4 @@
-// File: /Users/kahlilgersbach/Documents/Script Library/app/(dashboard)/scripts/page.tsx
+// File: /home/DL_scripts/app/(dashboard)/scripts/page.tsx
 import * as entry from '../../../../../app/(dashboard)/scripts/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
